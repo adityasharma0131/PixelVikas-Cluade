@@ -147,13 +147,16 @@ contactForm?.addEventListener("submit", (e) => {
 });
 
 // ── Smooth cursor effect (desktop only) ──
+// ── Smooth cursor effect (desktop only) ──
 if (window.innerWidth > 768) {
   const cursor = document.createElement("div");
   cursor.style.cssText = `
     position: fixed; width: 8px; height: 8px; border-radius: 50%;
     background: rgba(255,168,41,0.8); pointer-events: none; z-index: 9999;
-    transform: translate(-50%, -50%); transition: transform 0.1s ease, opacity 0.3s;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, opacity 0.3s;
     mix-blend-mode: screen;
+    will-change: left, top;
   `;
   document.body.appendChild(cursor);
 
@@ -161,20 +164,38 @@ if (window.innerWidth > 768) {
   cursorRing.style.cssText = `
     position: fixed; width: 28px; height: 28px; border-radius: 50%;
     border: 1px solid rgba(255,168,41,0.3); pointer-events: none; z-index: 9998;
-    transform: translate(-50%, -50%); transition: all 0.25s ease;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+    will-change: left, top;
   `;
   document.body.appendChild(cursorRing);
 
   let mx = 0,
     my = 0;
+  let ringX = 0,
+    ringY = 0;
+  let rafId;
+
   document.addEventListener("mousemove", (e) => {
     mx = e.clientX;
     my = e.clientY;
+
+    // Dot: instant — set directly, no transition on position
     cursor.style.left = mx + "px";
     cursor.style.top = my + "px";
-    cursorRing.style.left = mx + "px";
-    cursorRing.style.top = my + "px";
   });
+
+  // Ring: smooth lag via lerp in rAF
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  const animateRing = () => {
+    ringX = lerp(ringX, mx, 0.18);
+    ringY = lerp(ringY, my, 0.18);
+    cursorRing.style.left = ringX + "px";
+    cursorRing.style.top = ringY + "px";
+    rafId = requestAnimationFrame(animateRing);
+  };
+  animateRing();
 
   document
     .querySelectorAll("a, button, .project-card, .service-card")
